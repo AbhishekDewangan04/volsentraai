@@ -1,0 +1,44 @@
+{
+  "name": "ScenarioRun",
+  "type": "object",
+  "properties": {
+    "scenario": {
+      "type": "string"
+    },
+    "expected": {
+      "type": "string"
+    },
+    "actual": {
+      "type": "string"
+    },
+    "pass": {
+      "type": "boolean"
+    },
+    "note": {
+      "type": "string"
+    },
+    "ran_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "scenario",
+    "expected",
+    "actual",
+    "pass"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "name": "Alert",
+  "type": "object",
+  "properties": {
+    "consumer_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "detail": {
+      "type": "string"
+    },
+    "cause": {
+      "type": "string",
+      "enum": [
+        "Theft/Tampering",
+        "Meter Fault",
+        "Communication Failure",
+        "Legit Abnormal",
+        "Requires Review",
+        "Normal"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "acknowledged",
+        "closed"
+      ]
+    },
+    "raised_at": {
+      "type": "string"
+    },
+    "feeder": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "cause",
+    "severity"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

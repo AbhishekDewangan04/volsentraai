@@ -1,0 +1,88 @@
+{
+  "name": "Case",
+  "type": "object",
+  "properties": {
+    "consumer_id": {
+      "type": "string"
+    },
+    "consumer_name": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "New",
+        "Under Review",
+        "Inspection Scheduled",
+        "Confirmed Theft",
+        "Resolved",
+        "False Positive"
+      ]
+    },
+    "cause": {
+      "type": "string",
+      "enum": [
+        "Theft/Tampering",
+        "Meter Fault",
+        "Communication Failure",
+        "Legit Abnormal",
+        "Requires Review",
+        "Normal"
+      ]
+    },
+    "risk_score": {
+      "type": "number"
+    },
+    "assignee": {
+      "type": "string"
+    },
+    "due_date": {
+      "type": "string"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "feeder": {
+      "type": "string"
+    },
+    "order": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "activity": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [
+    "consumer_id",
+    "title",
+    "status"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

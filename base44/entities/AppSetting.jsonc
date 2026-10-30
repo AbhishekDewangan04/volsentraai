@@ -1,0 +1,37 @@
+{
+  "name": "AppSetting",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string"
+    },
+    "risk_threshold": {
+      "type": "number"
+    },
+    "notify": {
+      "type": "boolean"
+    },
+    "reduced_motion": {
+      "type": "boolean"
+    },
+    "api_base_url": {
+      "type": "string"
+    },
+    "assumption": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "key"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

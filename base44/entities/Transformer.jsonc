@@ -1,0 +1,71 @@
+{
+  "name": "Transformer",
+  "type": "object",
+  "properties": {
+    "transformer_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "feeder": {
+      "type": "string"
+    },
+    "capacity_kva": {
+      "type": "number"
+    },
+    "consumers": {
+      "type": "number"
+    },
+    "risk": {
+      "type": "number"
+    },
+    "loss_pct": {
+      "type": "number"
+    },
+    "input_kwh": {
+      "type": "number"
+    },
+    "billed_kwh": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "stable",
+        "watch",
+        "critical"
+      ]
+    },
+    "x": {
+      "type": "number"
+    },
+    "z": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "transformer_id",
+    "name",
+    "feeder",
+    "loss_pct"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
