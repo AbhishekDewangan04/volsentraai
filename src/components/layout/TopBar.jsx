@@ -36,11 +36,11 @@ const LABELS = {
 };
 
 export default function TopBar({ onOpenPalette }) {
-    const [demo, setDemo] = useState(isDemoMode());
-    useEffect(() => subscribeDemoMode(setDemo), []);
+    const [demoData, setDemoData] = useState(isDemoMode());
+    useEffect(() => subscribeDemoMode(setDemoData), []);
     const navigate = useNavigate();
     const pathname = useRouterState({ select: (s) => s.location.pathname });
-    const { user, isAuthenticated, isLoadingAuth, logout, navigateToLogin } = useAuth();
+    const { user, loading, isDemo, signOut } = useAuth();
     const { liveAlerts } = useGrid();
     const { t } = useI18n();
 
@@ -53,7 +53,8 @@ export default function TopBar({ onOpenPalette }) {
         .map((seg) => ({ seg, label: LABELS[seg] ? t(LABELS[seg]) : seg }))
         .filter((c) => !/^IN-MH/.test(c.seg) || true);
 
-    const initials = (user?.full_name || user?.email || "GA").slice(0, 2).toUpperCase();
+    const displayName = user?.name || user?.email || "Guest";
+    const initials = (user?.name || user?.email || "GA").slice(0, 2).toUpperCase();
 
     return (
         <header className="sticky top-0 z-30 border-b border-border/70 glass">
@@ -76,7 +77,19 @@ export default function TopBar({ onOpenPalette }) {
                 </nav>
 
                 <div className="ml-auto flex items-center gap-1.5">
-                    {demo && <span className="mono rounded-full border border-amber/30 bg-amber/10 px-2 py-1 text-[9px] font-semibold tracking-[0.12em] text-amber">DEMO DATA</span>}
+                    {/* Demo chip if in demo auth session */}
+                    {isDemo && (
+                        <span className="mono rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[9px] font-semibold tracking-[0.12em] text-sky-400">
+                            Demo
+                        </span>
+                    )}
+                    {/* DEMO DATA chip for underlying mock/synthetic grid data */}
+                    {demoData && (
+                        <span className="mono rounded-full border border-amber/30 bg-amber/10 px-2 py-0.5 text-[9px] font-semibold tracking-[0.12em] text-amber">
+                            DEMO DATA
+                        </span>
+                    )}
+
                     <button
                         type="button"
                         onClick={onOpenPalette}
@@ -143,17 +156,26 @@ export default function TopBar({ onOpenPalette }) {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-9 gap-2 rounded-full border border-border/70 px-1.5 pr-2.5 text-ink-soft hover:text-ink">
-                                <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-brand to-brand-2 text-[10px] font-semibold text-white">
-                                    {initials}
-                                </span>
-                                <span className="mono hidden max-w-[110px] truncate text-[11px] sm:block">
-                                    {isLoadingAuth ? "…" : user?.full_name || (isAuthenticated ? user?.email : t("top.guest"))}
+                                {user?.photoURL ? (
+                                    <img
+                                        src={user.photoURL}
+                                        alt={displayName}
+                                        className="h-6 w-6 rounded-full object-cover"
+                                        referrerPolicy="no-referrer"
+                                    />
+                                ) : (
+                                    <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-brand to-brand-2 text-[10px] font-semibold text-white">
+                                        {initials}
+                                    </span>
+                                )}
+                                <span className="mono hidden max-w-[120px] truncate text-[11px] sm:block">
+                                    {loading ? "…" : displayName}
                                 </span>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56 border-border/80 bg-popover">
                             <DropdownMenuLabel className="mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">
-                                {isAuthenticated ? user?.email : "Signed out"}
+                                {user ? (user.email || user.name) : "Signed out"}
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => navigate({ to: "/dashboard/settings" })}>
@@ -163,13 +185,13 @@ export default function TopBar({ onOpenPalette }) {
                                 <User className="mr-2 h-4 w-4" /> {t("top.myQueue")}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            {isAuthenticated ? (
-                                <DropdownMenuItem onClick={() => logout()}>
+                            {user && !isDemo ? (
+                                <DropdownMenuItem onClick={() => signOut()}>
                                     <LogOut className="mr-2 h-4 w-4" /> {t("top.signOut")}
                                 </DropdownMenuItem>
                             ) : (
-                                <DropdownMenuItem onClick={() => navigateToLogin()}>
-                                    <LogIn className="mr-2 h-4 w-4" /> {t("top.signIn")}
+                                <DropdownMenuItem onClick={() => navigate({ to: "/login" })}>
+                                    <LogIn className="mr-2 h-4 w-4" /> Sign in with Google
                                 </DropdownMenuItem>
                             )}
                         </DropdownMenuContent>
