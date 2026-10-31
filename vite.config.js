@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import base44 from "@base44/vite-plugin";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -13,6 +14,9 @@ const NOT_PREBUNDLED = new Set(["react", "react-dom", "@base44/vite-plugin", "@t
 const { dependencies } = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
 const PREBUNDLE = Object.keys(dependencies).filter((name) => !NOT_PREBUNDLED.has(name));
 
+// On Vercel (plain Node) "cloudflare:workers" does not exist, so production builds use this stand-in.
+const CLOUDFLARE_STUB = fileURLToPath(new URL("./src/stubs/cloudflare-workers.js", import.meta.url));
+
 export default defineConfig(({ command, mode }) => {
     const env = loadEnv(mode, process.cwd(), "");
     const demoMode = env.VITE_DEMO_MODE === "true"
@@ -23,17 +27,8 @@ export default defineConfig(({ command, mode }) => {
 
     return {
     optimizeDeps: { include: PREBUNDLE },
-    ...(isBuild ? {
-        environments: {
-            ssr: {
-                build: {
-                    rolldownOptions: {
-                        external: ["cloudflare:workers"],
-                    },
-                },
-            },
-        },
-    } : {
+    resolve: isBuild ? { alias: { "cloudflare:workers": CLOUDFLARE_STUB } } : {},
+    ...(isBuild ? {} : {
         environments: {
             ssr: {
                 optimizeDeps: { include: PREBUNDLE },
@@ -52,9 +47,7 @@ export default defineConfig(({ command, mode }) => {
         tanstackStart({ srcDirectory: "src" }),
         isBuild && nitro({
             preset: "vercel",
-            rollupConfig: {
-                external: ["cloudflare:workers"],
-            },
+            alias: { "cloudflare:workers": CLOUDFLARE_STUB },
         }),
         react(),
     ].filter(Boolean),
