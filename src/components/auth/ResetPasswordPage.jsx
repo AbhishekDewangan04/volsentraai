@@ -6,6 +6,7 @@ import { AuthLayout } from "@/components/auth/AuthLayout";
 import { AuthError, SubmitButton } from "@/components/auth/parts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { isDemoMode } from "@/lib/demoMode";
 
 // The /reset-password page; the reset email links here with ?token=.
 export function ResetPasswordPage() {
@@ -24,6 +25,11 @@ export function ResetPasswordPage() {
       return;
     }
     setBusy(true);
+    if (isDemoMode()) {
+      alert("Demo mode: no email is sent");
+      window.location.href = "/login";
+      return;
+    }
     try {
       await base44.auth.resetPassword({ resetToken: token, newPassword: password });
       window.location.href = "/login";

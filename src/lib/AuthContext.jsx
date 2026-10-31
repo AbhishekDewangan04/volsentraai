@@ -3,7 +3,7 @@ import { createContext, useContext, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { currentUrl } from "@/lib/authReturnTo";
 import { isBackendAvailable } from "@/lib/backendAvailability";
-import { isDemoMode } from "@/lib/demoMode";
+import { isDemoMode, getDemoSession, clearDemoSession } from "@/lib/demoMode";
 
 /**
  * The visitor, resolved once per page load and cached in the router's QueryClient:
@@ -16,8 +16,11 @@ import { isDemoMode } from "@/lib/demoMode";
 export const authQuery = queryOptions({
     queryKey: ["auth", "me"],
     queryFn: async () => {
+        if (isDemoMode()) {
+            return { user: getDemoSession(), error: null };
+        }
         // No token means no session; /me could only answer 401.
-        if (isDemoMode() || !base44.auth.hasToken() || !import.meta.env.VITE_BASE44_APP_ID || !(await isBackendAvailable())) return { user: null, error: null };
+        if (!base44.auth.hasToken() || !import.meta.env.VITE_BASE44_APP_ID || !(await isBackendAvailable())) return { user: null, error: null };
         try {
             return { user: await base44.auth.me(), error: null };
         } catch (err) {
@@ -55,7 +58,12 @@ export function AuthProvider({ children }) {
             refresh: () => queryClient.fetchQuery({ ...authQuery, staleTime: 0 }),
             logout: () => {
                 queryClient.setQueryData(authQuery.queryKey, { user: null, error: null });
-                if (!isDemoMode()) base44.auth.logout(window.location.origin);
+                if (isDemoMode()) {
+                    clearDemoSession();
+                    window.location.href = "/login";
+                } else {
+                    base44.auth.logout(window.location.origin);
+                }
             },
             // Full-page sign-in: /login with the current page as the way back. A hard
             // navigation on purpose — on an app served behind the platform login the

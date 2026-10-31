@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 import { safeReturnTo } from "@/lib/authReturnTo";
+import { isDemoMode, saveDemoSession } from "@/lib/demoMode";
 
 const isAlreadyVerified = (err) => err?.status === 400 && /already verified/i.test(err?.message ?? "");
 
@@ -34,6 +35,11 @@ export function RegisterPage() {
       return;
     }
     setBusy(true);
+    if (isDemoMode()) {
+      saveDemoSession();
+      window.location.href = (!returnTo || returnTo === "/") ? "/dashboard" : returnTo;
+      return;
+    }
     try {
       await base44.auth.register({ email, password });
       setStep("otp");

@@ -6,6 +6,7 @@ import { AuthLink, SubmitButton } from "@/components/auth/parts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { safeReturnTo } from "@/lib/authReturnTo";
+import { isDemoMode } from "@/lib/demoMode";
 
 // The /forgot-password page. Always ends in the generic "if an account exists"
 // message: the API does not reveal whether the email is registered, and neither should the UI.
@@ -18,6 +19,11 @@ export function ForgotPasswordPage() {
   async function submit(e) {
     e.preventDefault();
     setBusy(true);
+    if (isDemoMode()) {
+      setBusy(false);
+      setSent(true);
+      return;
+    }
     try {
       await base44.auth.resetPasswordRequest(email);
     } catch {
@@ -31,7 +37,9 @@ export function ForgotPasswordPage() {
   return (
     <AuthLayout icon={Mail} title="Reset password" subtitle="We'll send you a link to reset it">
       {sent ? (
-        <p className="text-center text-sm text-foreground">If an account exists with that email, you'll receive a password reset link shortly.</p>
+        <p className="text-center text-sm text-foreground">
+          {isDemoMode() ? "Demo mode: no email is sent" : "If an account exists with that email, you'll receive a password reset link shortly."}
+        </p>
       ) : (
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-2">

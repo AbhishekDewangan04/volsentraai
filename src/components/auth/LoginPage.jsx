@@ -6,6 +6,7 @@ import { AuthError, AuthLink, GoogleButton, OrDivider, SubmitButton } from "@/co
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { safeReturnTo } from "@/lib/authReturnTo";
+import { isDemoMode, saveDemoSession } from "@/lib/demoMode";
 
 // The /login page. ?returnTo= (or the platform's ?from_url=) is where the visitor
 // goes after signing in — the login gate and the MCP consent page send people here with it.
@@ -20,6 +21,11 @@ export function LoginPage() {
     e.preventDefault();
     setError("");
     setBusy(true);
+    if (isDemoMode()) {
+      saveDemoSession();
+      window.location.href = (!returnTo || returnTo === "/") ? "/dashboard" : returnTo;
+      return;
+    }
     try {
       await base44.auth.loginViaEmailPassword(email, password);
       // A hard redirect: the app re-initializes with the new session.
@@ -59,6 +65,11 @@ export function LoginPage() {
           Log in
         </SubmitButton>
       </form>
+      {isDemoMode() && (
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          Demo mode: any credentials work.
+        </p>
+      )}
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Don't have an account?{" "}
         <AuthLink to="/register" returnTo={returnTo}>
