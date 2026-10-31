@@ -16,20 +16,22 @@ import { isDemoMode, getDemoSession, clearDemoSession } from "@/lib/demoMode";
 export const authQuery = queryOptions({
     queryKey: ["auth", "me"],
     queryFn: async () => {
-        if (isDemoMode()) {
+        if (isDemoMode() || !(await isBackendAvailable())) {
             return { user: getDemoSession(), error: null };
         }
         // No token means no session; /me could only answer 401.
-        if (!base44.auth.hasToken() || !import.meta.env.VITE_BASE44_APP_ID || !(await isBackendAvailable())) return { user: null, error: null };
+        if (!base44.auth.hasToken() || !import.meta.env.VITE_BASE44_APP_ID) return { user: null, error: null };
         try {
             return { user: await base44.auth.me(), error: null };
         } catch (err) {
             if (err?.data?.extra_data?.reason === "user_not_registered") {
                 return { user: null, error: { type: "user_not_registered", message: "Not registered" } };
             }
-            if ([401, 403, 404].includes(err?.status)) return { user: null, error: null };
+            if ([401, 403, 404].includes(err?.status) || err?.data?.message === "not_deployed") {
+                return { user: getDemoSession(), error: null };
+            }
             if (!warnedAuth) { warnedAuth = true; console.warn("Volsentra auth unavailable; continuing as guest."); }
-            return { user: null, error: null };
+            return { user: getDemoSession(), error: null };
         }
     },
     staleTime: Infinity,
