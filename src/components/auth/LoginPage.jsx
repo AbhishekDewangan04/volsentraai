@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { useAuth } from "@/lib/AuthContext";
 import { firebaseConfigured } from "@/lib/firebase";
+import { isDemoMode } from "@/lib/demoMode";
 
 export function LoginPage() {
   const returnTo = safeReturnTo();
@@ -61,16 +62,18 @@ export function LoginPage() {
           {busy ? "Signing in..." : "Continue with Google"}
         </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="h-12 w-full text-sm font-medium border-border/80 hover:bg-foreground/[0.04]"
-          disabled={busy}
-          onClick={handleDemo}
-        >
-          <Sparkles className="mr-2 h-4 w-4 text-amber" />
-          Continue as demo
-        </Button>
+        {isDemoMode() && (
+          <Button
+            type="button"
+            variant="outline"
+            className="h-12 w-full text-sm font-medium border-border/80 hover:bg-foreground/[0.04]"
+            disabled={busy}
+            onClick={handleDemo}
+          >
+            <Sparkles className="mr-2 h-4 w-4 text-amber" />
+            Continue as demo
+          </Button>
+        )}
       </div>
 
       {!firebaseConfigured && (

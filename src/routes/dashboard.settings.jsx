@@ -156,9 +156,19 @@ function SettingsPage() {
                         />
                         <Button
                             onClick={() => {
-                                updateSettings({ api_base_url: api.trim() });
-                                toast.success(api.trim() ? "Service endpoint saved" : "Endpoint cleared", {
-                                    description: api.trim() ? "Reads will try your API first, then fall back to the demo grid." : "Back to the seeded demo grid.",
+                                const value = api.trim();
+                                if (value) {
+                                    try {
+                                        const parsed = new URL(value);
+                                        if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error("unsafe");
+                                    } catch {
+                                        toast.error("Use a valid HTTPS endpoint without credentials or query parameters.");
+                                        return;
+                                    }
+                                }
+                                updateSettings({ api_base_url: value });
+                                toast.success(value ? "Service endpoint saved" : "Endpoint cleared", {
+                                    description: value ? "Reads will try your API first, then fall back to the demo grid." : "Back to the seeded demo grid.",
                                 });
                             }}
                             className="h-9 shrink-0 gap-1.5 rounded-full bg-gradient-to-r from-brand to-brand-2 px-4 text-[12px] text-white"

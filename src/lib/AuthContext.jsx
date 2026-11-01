@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useMemo } from "react";
 import { getFirebaseAuth, firebaseConfigured } from "@/lib/firebase";
 
 const DEMO_FLAG_KEY = "gg.demo";
+const demoModeEnabled = import.meta.env.VITE_DEMO_MODE === "true";
 const DEMO_USER = {
   uid: "demo-guest",
   name: "Guest Analyst",
@@ -10,7 +11,7 @@ const DEMO_USER = {
 };
 
 function readDemoFlag() {
-  if (typeof window === "undefined") return false;
+  if (!demoModeEnabled || typeof window === "undefined") return false;
   try {
     return window.localStorage.getItem(DEMO_FLAG_KEY) === "1";
   } catch {
@@ -170,6 +171,7 @@ export function AuthProvider({ children }) {
   };
 
   const continueAsDemo = () => {
+    if (!demoModeEnabled) return null;
     writeDemoFlag(true);
     setUser(DEMO_USER);
     setIsDemo(true);

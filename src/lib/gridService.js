@@ -21,7 +21,21 @@ export function subscribeDemoMode(listener) { const timer = setInterval(() => li
 async function safe(remoteCall, fallback) { if (isDemoMode() || backendFailed) return fallback(); if (!(await isBackendAvailable())) { markDemo(); return fallback(); } try { const result = await remoteCall(); return result; } catch { markDemo(); return fallback(); } }
 
 export const setApiBase = (url) => {
-    apiBase = (url || "").replace(/\/$/, "");
+    const value = String(url || "").trim();
+    if (!value) {
+        apiBase = "";
+        return;
+    }
+    try {
+        const parsed = new URL(value);
+        if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.search || parsed.hash) {
+            apiBase = "";
+            return;
+        }
+        apiBase = parsed.toString().replace(/\/$/, "");
+    } catch {
+        apiBase = "";
+    }
 };
 
 async function remote(path) {
