@@ -6,7 +6,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/AuthContext";
 import { GridProvider } from "@/lib/GridContext";
 import { LangProvider } from "@/lib/i18n";
-import { Base44Scripts } from "base44:document";
 import appCss from "@/index.css?url";
 
 export const Route = createRootRoute({
@@ -61,7 +60,6 @@ function RootDocument({ children }) {
             </head>
             <body data-react-root="true">
                 {children}
-                <Base44Scripts />
                 <Scripts />
             </body>
         </html>

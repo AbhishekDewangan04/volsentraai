@@ -1,8 +1,5 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { redirect } from "@tanstack/react-router";
 import { DefaultCatchBoundary } from "@/components/DefaultCatchBoundary";
-import { UserNotRegistered } from "@/components/auth/UserNotRegistered";
-
-class NotRegisteredError extends Error { }
 
 export function requireSignedIn({ location }) {
   if (typeof window === "undefined") {
@@ -34,5 +31,5 @@ export function requireSignedIn({ location }) {
 }
 
 export function AuthGateError({ error }) {
-  return error instanceof NotRegisteredError ? <UserNotRegistered /> : <DefaultCatchBoundary error={error} />;
+  return <DefaultCatchBoundary error={error} />;
 }

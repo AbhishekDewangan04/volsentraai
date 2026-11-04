@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { CauseChip, SeverityChip } from "@/components/common/Chip";
-import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
 import { inrCompact, num } from "@/lib/gridData";
 
@@ -30,151 +29,191 @@ export default function InspectionSheet({ stop, open, onOpenChange, onOutcome, b
     if (!file) return;
     setUploading(true);
     try {
-      const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
-      setPhoto({ uri: file_uri, name: file.name });
-    } finally {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPhoto({ uri: reader.result, name: file.name });
+        setUploading(false);
+      };
+      reader.onerror = () => {
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
       setUploading(false);
     }
   };
 
   const submit = (outcome) => {
-    if (!stop) return;
-    onOutcome({
-      consumer: stop.consumer,
+    if (!c) return;
+    onOutcome?.({
+      consumer: c,
       caseRecord: stop.caseRecord,
       outcome,
-      checklist: { ...checklist, reading },
+      checklist: {
+        ...checklist,
+        reading: reading ? Number(reading) : null,
+      },
       notes,
-      photoUri: photo?.uri ?? "",
+      photoUri: photo?.uri || "",
     });
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full overflow-y-auto border-border/70 bg-surface p-0 sm:max-w-md">
+      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto border-border/80 bg-canvas">
+        <SheetHeader>
+          <div className="flex items-center gap-2">
+            <SeverityChip severity={c?.risk_score >= 80 ? "critical" : c?.risk_score >= 55 ? "high" : "medium"} />
+            <span className="mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+              {stop?.priority ? `Stop #${stop.priority}` : "Inspection"}
+            </span>
+          </div>
+          <SheetTitle className="font-heading text-xl text-ink">{c?.name || "Consumer details"}</SheetTitle>
+          <SheetDescription className="mono text-[11px] text-ink-faint">
+            ID {c?.consumer_id} · Meter {c?.meter_no} · {c?.feeder}
+          </SheetDescription>
+        </SheetHeader>
+
         {c && (
-          <>
-            <SheetHeader className="border-b border-border/60 p-4 text-left">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="mono text-[9px] uppercase tracking-[0.16em] text-ink-faint">
-                    {t("field.stop")} {stop.visit} · {stop.legKm} km
-                  </p>
-                  <SheetTitle className="mt-1 truncate font-heading text-[17px] font-semibold text-ink">{c.name}</SheetTitle>
-                  <SheetDescription className="mono mt-1 text-[10px] text-ink-faint">
-                    {c.consumer_id} · {c.transformer_id} · {c.feeder}
-                  </SheetDescription>
+          <div className="mt-6 space-y-6">
+            <div className="rounded-xl border border-border/70 p-3.5 glass">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">Current risk score</p>
+                  <p className="font-heading text-2xl font-semibold text-ink">{c.risk_score} / 100</p>
                 </div>
-                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 rounded-full" onClick={() => onOpenChange(false)} aria-label={t("act.close")}>
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="text-right">
+                  <p className="mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">Confidence</p>
+                  <p className="mono text-sm font-semibold text-brand">{c.confidence}%</p>
+                </div>
               </div>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <CauseChip cause={c.cause} />
-                <SeverityChip severity={stop.priority} />
-                <span className="mono rounded-full border border-border/80 px-2 py-[3px] text-[10px] text-ink-soft">
-                  risk {c.risk_score}
+              <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-2.5 text-[11px]">
+                <span className="text-ink-soft">Baseline vs Actual</span>
+                <span className="mono text-ink">
+                  {num(c.baseline_kwh)} vs <span className="text-rose">{num(c.actual_kwh)}</span> kWh
                 </span>
               </div>
-            </SheetHeader>
-
-            <div className="space-y-4 p-4">
-              <div>
-                <p className="mono text-[9px] uppercase tracking-[0.16em] text-ink-faint">{t("field.evidence")}</p>
-                <ul className="mt-1.5 space-y-1">
-                  {(c.reasons ?? []).slice(0, 3).map((r, i) => (
-                    <li key={i} className="flex gap-1.5 text-[11px] leading-snug text-ink-soft">
-                      <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-brand" />
-                      {r}
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-2 grid grid-cols-3 gap-1.5">
-                  {[
-                    ["Baseline", num(c.baseline_kwh)],
-                    ["Billed", num(c.actual_kwh)],
-                    ["Recoverable", inrCompact(stop.recoverable)],
-                  ].map(([k, v]) => (
-                    <div key={k} className="rounded-lg border border-border/70 bg-foreground/[0.03] px-2 py-1.5">
-                      <p className="mono text-[8px] uppercase tracking-[0.1em] text-ink-faint">{k}</p>
-                      <p className="mono mt-0.5 truncate text-[11px] text-ink">{v}</p>
-                    </div>
-                  ))}
-                </div>
+              <div className="mt-1 flex items-center justify-between text-[11px]">
+                <span className="text-ink-soft">Est. monthly loss</span>
+                <span className="mono font-semibold text-rose">{inrCompact(c.loss_rs_month)}</span>
               </div>
-
-              <div>
-                <p className="mono text-[9px] uppercase tracking-[0.16em] text-ink-faint">{t("field.checklist")}</p>
-                <div className="mt-1.5 space-y-2">
-                  {CHECKS.map(([key, label]) => (
-                    <label key={key} className="flex cursor-pointer items-center gap-2 text-[12px] text-ink-soft">
-                      <Checkbox
-                        checked={checklist[key]}
-                        onCheckedChange={(v) => setChecklist((prev) => ({ ...prev, [key]: !!v }))}
-                        aria-label={t(label)}
-                      />
-                      <span>{t(label)}</span>
-                    </label>
-                  ))}
-                  <div>
-                    <p className="mono text-[9px] uppercase tracking-[0.12em] text-ink-faint">{t("field.reading")}</p>
-                    <Input
-                      value={reading}
-                      onChange={(e) => setReading(e.target.value)}
-                      inputMode="numeric"
-                      placeholder="0"
-                      className="mt-1 h-9 border-border/80 bg-foreground/[0.03] text-[12px]"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <p className="mono text-[9px] uppercase tracking-[0.16em] text-ink-faint">{t("field.photo")}</p>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <label className="flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-border/80 bg-foreground/[0.03] px-3 text-[11px] text-ink-soft hover:text-ink">
-                    {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
-                    <span>{photo ? photo.name : t("field.photo")}</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
-                  </label>
-                  {photo && (
-                    <span className="mono flex items-center gap-1 text-[9px] text-mint">
-                      <Check className="h-3 w-3" /> stored privately
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <p className="mono text-[9px] uppercase tracking-[0.16em] text-ink-faint">{t("field.notes")}</p>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  className="mt-1.5 border-border/80 bg-foreground/[0.03] text-[12px]"
-                  placeholder="What did you find on site?"
-                />
-              </div>
-
-              <div className="grid gap-2 border-t border-border/60 pt-3">
-                <Button
-                  disabled={busy}
-                  onClick={() => submit("confirmed")}
-                  className="h-10 gap-1.5 rounded-full bg-rose text-white hover:bg-rose/90"
-                >
-                  {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {t("field.confirmed")}
-                </Button>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button disabled={busy} variant="outline" onClick={() => submit("false_positive")} className="h-9 rounded-full border-border/80 text-[12px]">
-                    {t("field.falsePositive")}
-                  </Button>
-                  <Button disabled={busy} variant="outline" onClick={() => submit("revisit")} className="h-9 rounded-full border-border/80 text-[12px]">
-                    {t("field.revisit")}
-                  </Button>
-                </div>
+              <div className="mt-2.5 flex items-center gap-2">
+                <CauseChip cause={c.cause} />
               </div>
             </div>
-          </>
+
+            <div className="space-y-3">
+              <p className="mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">Physical checklist</p>
+              {CHECKS.map(([key, labelKey]) => (
+                <label
+                  key={key}
+                  className="flex items-center gap-3 rounded-lg border border-border/60 p-3 transition-colors hover:bg-foreground/[0.03] cursor-pointer"
+                >
+                  <Checkbox
+                    checked={checklist[key]}
+                    onCheckedChange={(val) => setChecklist((prev) => ({ ...prev, [key]: Boolean(val) }))}
+                  />
+                  <span className="text-sm text-ink">{t(labelKey)}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="field-reading" className="mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+                Current meter reading (kWh)
+              </label>
+              <Input
+                id="field-reading"
+                type="number"
+                placeholder={String(c.actual_kwh || "")}
+                value={reading}
+                onChange={(e) => setReading(e.target.value)}
+                className="mono h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="field-notes" className="mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+                Inspector notes
+              </label>
+              <Textarea
+                id="field-notes"
+                placeholder="Observations on tamper evidence, seal integrity or consumer behavior..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                className="text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <p className="mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">Photo evidence</p>
+              {photo ? (
+                <div className="relative rounded-lg border border-border/80 p-2">
+                  <img src={photo.uri} alt="Evidence" className="h-40 w-full rounded object-cover" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-3 top-3 h-7 w-7 rounded-full bg-black/70 text-white hover:bg-black"
+                    onClick={() => setPhoto(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <label className="flex h-24 w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border/80 text-ink-faint transition-colors hover:border-border hover:text-ink cursor-pointer">
+                  {uploading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Camera className="h-5 w-5" />
+                      <span className="text-[12px]">Tap to attach photo</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(e) => upload(e.target.files?.[0])}
+                  />
+                </label>
+              )}
+            </div>
+
+            <div className="space-y-2 border-t border-border/70 pt-4">
+              <p className="mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">Resolve inspection</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <Button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => submit("confirmed")}
+                  className="h-11 bg-rose text-white hover:bg-rose/90 text-xs font-medium"
+                >
+                  <Check className="mr-1.5 h-3.5 w-3.5" /> Confirmed
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => submit("false_positive")}
+                  className="h-11 border-border/80 text-xs font-medium"
+                >
+                  False positive
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => submit("revisit")}
+                  className="h-11 text-ink-soft text-xs font-medium"
+                >
+                  Revisit
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
       </SheetContent>
     </Sheet>
